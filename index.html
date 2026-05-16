@@ -784,7 +784,19 @@
     function App() {
       const [screen,setScreen]=useState("welcome");
       const [name,setName]=useState("Héline");
-      const [progress,setProgress]=useState(initProgress);
+      const [progress,setProgress]=useState(()=>{
+
+  try{const s=localStorage.getItem("ef_progress");return s?JSON.parse(s):initProgress();}
+
+  catch{return initProgress();}
+
+});
+
+React.useEffect(()=>{
+
+  try{localStorage.setItem("ef_progress",JSON.stringify(progress));}catch{}
+
+},[progress]);
       const [lessonId,setLessonId]=useState(null);
       const [exIdx,setExIdx]=useState(0);
       const [score,setScore]=useState(0);
