@@ -1,0 +1,1059 @@
+import { useState, useEffect, useRef } from "react";
+
+// ══════════════════════════════════════════════════════════════════
+// 📚 DONNÉES — Pour ajouter une leçon, copier un objet et modifier
+// Types exercices : "qcm" | "fill" | "order" | "speak"
+// Types jeux : "memory" | "hang"
+// ══════════════════════════════════════════════════════════════════
+const LESSONS = [
+  {
+    id:1, title:"Hello World!", sub:"Identité & Émotions", emoji:"👋",
+    exercises:[
+      {t:"qcm",lvl:1,q:"What does 'hello' mean?",ok:"Bonjour",bad:["Au revoir","Merci","S'il vous plaît"],fb:"Hello = Bonjour ! 👋"},
+      {t:"qcm",lvl:1,q:"How do you say 'I am 12 years old'?",ok:"I am 12 years old",bad:["I have 12 years","I is 12 years old","I be 12"],fb:"Avec 'to be': I am 12 ! 🎉"},
+      {t:"fill",lvl:1,q:"My name ___ Héline.",ans:"is",hint:"to be — 3ème personne"},
+      {t:"fill",lvl:1,q:"I ___ happy today!",ans:"am",hint:"to be — 1ère personne"},
+      {t:"qcm",lvl:1,q:"What does 'sad' mean?",ok:"triste",bad:["content","fatigué","en colère"],fb:"Sad = triste 😢"},
+      {t:"qcm",lvl:2,q:"What does 'angry' mean?",ok:"en colère",bad:["triste","content","surpris"],fb:"Angry = en colère 😤"},
+      {t:"qcm",lvl:2,q:"She ___ 13 years old.",ok:"is",bad:["am","are","be"],fb:"She IS — 3ème pers. singulier ✨"},
+      {t:"order",lvl:2,q:"Remets dans l'ordre :",words:["I","am","twelve","years","old"],ans:"I am twelve years old",fb:"Parfait ! 🌟"},
+      {t:"speak",lvl:2,inst:"Dis à voix haute :",target:"Hello my name is Héline",show:"Hello, my name is Héline!",kw:["hello","name"],fb:"Excellent accent ! 🎤"},
+      {t:"speak",lvl:3,inst:"Présente-toi :",target:"Hi I am twelve and I am happy",show:"Hi! I am twelve and I am happy!",kw:["hi","twelve","happy"],fb:"Super speaking ! 🌟"},
+    ],
+    game:{type:"memory",title:"Memory : Émotions",pairs:[
+      {a:"happy 😊",b:"content"},{a:"sad 😢",b:"triste"},
+      {a:"angry 😤",b:"en colère"},{a:"tired 😴",b:"fatigué"},
+      {a:"scared 😱",b:"peur"},{a:"excited 🤩",b:"excité"},
+    ]}
+  },
+  {
+    id:2, title:"School Day", sub:"École & Routine", emoji:"🎒",
+    exercises:[
+      {t:"qcm",lvl:1,q:"What does 'pencil' mean?",ok:"crayon",bad:["stylo","règle","cahier"],fb:"Pencil = crayon ✏️"},
+      {t:"qcm",lvl:1,q:"What does 'ruler' mean?",ok:"règle",bad:["crayon","livre","cartable"],fb:"Ruler = règle 📏"},
+      {t:"fill",lvl:1,q:"I ___ a pencil in my bag.",ans:"have",hint:"to have — 1ère personne"},
+      {t:"fill",lvl:2,q:"She ___ maths on Monday.",ans:"has",hint:"to have — 3ème pers. : has"},
+      {t:"qcm",lvl:2,q:"I have maths ___ 9 o'clock.",ok:"at",bad:["in","on","to"],fb:"Heure précise → at ⏰"},
+      {t:"qcm",lvl:2,q:"'I like English' → she :",ok:"She likes English",bad:["She like English","She is liking English","She liked English"],fb:"3ème pers. → likes (avec s) 📝"},
+      {t:"qcm",lvl:2,q:"'Homework' means...",ok:"devoirs",bad:["maison","travail","classe"],fb:"Homework = les devoirs 📚"},
+      {t:"order",lvl:2,q:"Forme la phrase :",words:["I","have","maths","at","nine"],ans:"I have maths at nine",fb:"Super ! 🎉"},
+      {t:"speak",lvl:2,inst:"Dis cette phrase :",target:"I have English on Monday",show:"I have English on Monday.",kw:["english","monday"],fb:"Très bon accent ! 🎤"},
+      {t:"speak",lvl:3,inst:"Décris ta journée :",target:"I go to school at eight o clock",show:"I go to school at eight o'clock.",kw:["school","eight"],fb:"Excellent ! 🌟"},
+    ],
+    game:{type:"hang",title:"Pendu : Objets de classe",words:[
+      {w:"PENCIL",h:"Pour écrire ✏️"},{w:"RULER",h:"Pour tracer 📏"},
+      {w:"NOTEBOOK",h:"Pour noter tes cours 📓"},{w:"BACKPACK",h:"Sur ton dos 🎒"},
+      {w:"ERASER",h:"Pour effacer 🧹"},
+    ]}
+  },
+  {
+    id:3, title:"My Home", sub:"Maison & Quartier", emoji:"🏠",
+    exercises:[
+      {t:"qcm",lvl:1,q:"What is a 'bedroom'?",ok:"une chambre",bad:["une cuisine","un salon","une salle de bain"],fb:"Bedroom = chambre 🛏️"},
+      {t:"qcm",lvl:1,q:"What does 'kitchen' mean?",ok:"cuisine",bad:["chambre","salon","jardin"],fb:"Kitchen = cuisine 🍳"},
+      {t:"fill",lvl:1,q:"The bathroom is ___ the left.",ans:"on",hint:"on the left / on the right"},
+      {t:"qcm",lvl:2,q:"How do you say 'Tournez à gauche'?",ok:"Turn left",bad:["Go straight","Turn right","Stop"],fb:"Turn left = Tournez à gauche ⬅️"},
+      {t:"qcm",lvl:2,q:"There ___ a table in the kitchen.",ok:"is",bad:["are","have","has"],fb:"There IS (singulier) 🪑"},
+      {t:"fill",lvl:2,q:"There ___ two cats in my garden.",ans:"are",hint:"there are — pluriel"},
+      {t:"qcm",lvl:2,q:"'Next to' means...",ok:"à côté de",bad:["en face de","loin de","derrière"],fb:"Next to = à côté de 📍"},
+      {t:"order",lvl:2,q:"Donne une direction :",words:["Turn","right","at","the","school"],ans:"Turn right at the school",fb:"Parfait ! ➡️"},
+      {t:"speak",lvl:2,inst:"Donne une direction :",target:"Turn left at the school",show:"Turn left at the school.",kw:["turn","left","school"],fb:"Parfaite direction ! 🗺️"},
+      {t:"speak",lvl:3,inst:"Décris ta maison :",target:"I live in a house with a garden",show:"I live in a house with a garden.",kw:["live","house","garden"],fb:"Super description ! 🏠"},
+    ],
+    game:{type:"memory",title:"Memory : La maison",pairs:[
+      {a:"bedroom 🛏️",b:"chambre"},{a:"kitchen 🍳",b:"cuisine"},
+      {a:"bathroom 🚿",b:"salle de bain"},{a:"garden 🌳",b:"jardin"},
+      {a:"living room 🛋️",b:"salon"},{a:"garage 🚗",b:"garage"},
+    ]}
+  },
+  {
+    id:4, title:"Fun & Hobbies", sub:"Loisirs & Sports", emoji:"⚽",
+    exercises:[
+      {t:"qcm",lvl:1,q:"'I like swimming' means...",ok:"J'aime nager",bad:["Je nage","J'aime courir","Je joue au foot"],fb:"Like + -ing = j'aime + verbe 🏊"},
+      {t:"qcm",lvl:1,q:"'Sunny' means...",ok:"ensoleillé",bad:["nuageux","pluvieux","neigeux"],fb:"Sunny = ensoleillé ☀️"},
+      {t:"fill",lvl:2,q:"I like ___ football on weekends.",ans:"playing",hint:"like + verb-ing"},
+      {t:"fill",lvl:2,q:"She doesn't ___ vegetables.",ans:"like",hint:"doesn't + infinitif"},
+      {t:"qcm",lvl:2,q:"'Il fait froid' in English?",ok:"It is cold",bad:["It is hot","It is raining","It is sunny"],fb:"It is cold = il fait froid 🥶"},
+      {t:"qcm",lvl:2,q:"I ___ like pizza. (négatif, 1ère pers.)",ok:"don't",bad:["doesn't","not","am not"],fb:"I don't (négatif 1ère pers.) 🍕"},
+      {t:"qcm",lvl:2,q:"She ___ like pizza. (négatif, 3ème pers.)",ok:"doesn't",bad:["don't","not","isn't"],fb:"She doesn't (3ème pers.) 🙅"},
+      {t:"order",lvl:2,q:"Forme la phrase :",words:["I","love","playing","tennis"],ans:"I love playing tennis",fb:"Super ! 🎾"},
+      {t:"speak",lvl:2,inst:"Tes loisirs :",target:"I like playing football",show:"I like playing football.",kw:["like","playing","football"],fb:"Super ! ⚽"},
+      {t:"speak",lvl:3,inst:"Décris la météo :",target:"It is sunny and I love playing outside",show:"It is sunny and I love playing outside!",kw:["sunny","love","playing"],fb:"Excellent ! ☀️"},
+    ],
+    game:{type:"hang",title:"Pendu : Sports & Loisirs",words:[
+      {w:"FOOTBALL",h:"Sport avec un ballon ⚽"},{w:"SWIMMING",h:"Dans l'eau 🏊"},
+      {w:"DANCING",h:"Bouger au rythme 💃"},{w:"READING",h:"Livres 📚"},
+      {w:"COOKING",h:"En cuisine 🍳"},
+    ]}
+  },
+  {
+    id:5, title:"English World", sub:"Le monde anglophone", emoji:"🌍",
+    exercises:[
+      {t:"qcm",lvl:1,q:"The Big Ben is in...",ok:"London",bad:["Paris","New York","Sydney"],fb:"Big Ben is in London ! 🔔"},
+      {t:"qcm",lvl:1,q:"'Sit down!' means...",ok:"Assieds-toi !",bad:["Lève-toi !","Tais-toi !","Viens !"],fb:"Sit down = Assieds-toi ! 💺"},
+      {t:"qcm",lvl:2,q:"The Statue of Liberty is in...",ok:"New York",bad:["London","Sydney","Toronto"],fb:"Statue of Liberty = New York ! 🗽"},
+      {t:"fill",lvl:2,q:"In the UK, people drive on the ___ side.",ans:"left",hint:"gauche = left"},
+      {t:"qcm",lvl:2,q:"'Stand up!' means...",ok:"Lève-toi !",bad:["Assieds-toi !","Arrête !","Parle !"],fb:"Stand up = Lève-toi ! 🧍"},
+      {t:"order",lvl:2,q:"Forme l'ordre :",words:["Please","open","your","book"],ans:"Please open your book",fb:"Parfait ! 📖"},
+      {t:"qcm",lvl:3,q:"'Be quiet!' means...",ok:"Tais-toi !",bad:["Assieds-toi !","Lève-toi !","Écoute !"],fb:"Be quiet = Tais-toi ! 🤫"},
+      {t:"order",lvl:3,q:"Forme une question :",words:["Where","do","you","come","from"],ans:"Where do you come from",fb:"Super ! 🌍"},
+      {t:"speak",lvl:2,inst:"Un ordre en classe :",target:"Please open your book",show:"Please open your book!",kw:["open","book"],fb:"Excellent ! 📚"},
+      {t:"speak",lvl:3,inst:"Monde anglophone :",target:"Big Ben is in London in England",show:"Big Ben is in London, in England.",kw:["big","ben","london"],fb:"Super culture ! 🌍"},
+    ],
+    game:{type:"memory",title:"Memory : Landmarks",pairs:[
+      {a:"Big Ben 🔔",b:"Londres"},{a:"Statue of Liberty 🗽",b:"New York"},
+      {a:"Opera House 🦘",b:"Sydney"},{a:"Niagara Falls 🍁",b:"Canada"},
+      {a:"Tower Bridge 🌉",b:"Angleterre"},{a:"Times Square 🌆",b:"New York"},
+    ]}
+  },
+  {
+    id:6, title:"Right Now!", sub:"Présent continu", emoji:"⏳",
+    exercises:[
+      {t:"qcm",lvl:1,q:"'I am playing' means...",ok:"Je suis en train de jouer",bad:["Je joue souvent","J'ai joué","Je vais jouer"],fb:"Present continuous = action maintenant ! ⏳"},
+      {t:"fill",lvl:1,q:"She ___ reading right now.",ans:"is",hint:"présent continu: is/am/are"},
+      {t:"qcm",lvl:2,q:"I ___ eating pizza. (maintenant)",ok:"am",bad:["is","are","be"],fb:"I am + -ing 🍕"},
+      {t:"qcm",lvl:2,q:"They ___ playing football.",ok:"are",bad:["is","am","be"],fb:"They ARE + -ing ⚽"},
+      {t:"fill",lvl:2,q:"We are ___ (listen) to music.",ans:"listening",hint:"verb + -ing"},
+      {t:"qcm",lvl:2,q:"'She is dancing' → question :",ok:"Is she dancing?",bad:["She is dancing?","Does she dance?","Is dancing she?"],fb:"Question : Is + sujet + -ing ? 💃"},
+      {t:"fill",lvl:3,q:"He is ___ (run) in the park.",ans:"running",hint:"run → running (double la consonne)"},
+      {t:"order",lvl:2,q:"Forme la phrase :",words:["She","is","watching","TV"],ans:"She is watching TV",fb:"Bravo ! 📺"},
+      {t:"speak",lvl:2,inst:"Ce que tu fais :",target:"I am learning English right now",show:"I am learning English right now!",kw:["learning","english"],fb:"Super ! ⏳"},
+      {t:"speak",lvl:3,inst:"Décris une image :",target:"The boy is running in the park",show:"The boy is running in the park.",kw:["running","park"],fb:"Parfait ! 🏃"},
+    ],
+    game:{type:"hang",title:"Pendu : Verbes en -ing",words:[
+      {w:"RUNNING",h:"Courir 🏃"},{w:"SLEEPING",h:"Dormir 💤"},
+      {w:"EATING",h:"Manger 🍽️"},{w:"DANCING",h:"Danser 💃"},
+      {w:"SINGING",h:"Chanter 🎤"},
+    ]}
+  },
+  {
+    id:7, title:"Yesterday", sub:"Le prétérit", emoji:"📅",
+    exercises:[
+      {t:"qcm",lvl:1,q:"'I visited' means...",ok:"J'ai visité",bad:["Je visite","Je vais visiter","Je visiterais"],fb:"Simple past = action passée ✅"},
+      {t:"fill",lvl:1,q:"Yesterday, I ___ (watch) TV.",ans:"watched",hint:"verb + -ed (réguliers)"},
+      {t:"qcm",lvl:2,q:"Past of 'go' is...",ok:"went",bad:["goed","gone","goes"],fb:"Go → went (irrégulier !) 🔄"},
+      {t:"fill",lvl:2,q:"She ___ (go) to school yesterday.",ans:"went",hint:"go → went (irrégulier)"},
+      {t:"qcm",lvl:2,q:"Past of 'eat' is...",ok:"ate",bad:["eated","eating","eat"],fb:"Eat → ate (irrégulier !) 🍽️"},
+      {t:"qcm",lvl:2,q:"Négatif passé: She ___ play yesterday.",ok:"didn't",bad:["don't","wasn't","not"],fb:"Négatif passé : didn't + infinitif ❌"},
+      {t:"fill",lvl:3,q:"She ___ not play yesterday.",ans:"did",hint:"négatif passé: did not / didn't"},
+      {t:"order",lvl:2,q:"Forme la phrase :",words:["I","visited","London","last","summer"],ans:"I visited London last summer",fb:"Super ! 🇬🇧"},
+      {t:"speak",lvl:2,inst:"Parle de hier :",target:"Yesterday I watched TV at home",show:"Yesterday, I watched TV at home.",kw:["yesterday","watched"],fb:"Parfait ! 📺"},
+      {t:"speak",lvl:3,inst:"Raconte ton weekend :",target:"Last weekend I played football with my friends",show:"Last weekend, I played football with my friends!",kw:["weekend","played","friends"],fb:"Super storytelling ! 📖"},
+    ],
+    game:{type:"memory",title:"Memory : Verbes irréguliers",pairs:[
+      {a:"go → went",b:"aller ✈️"},{a:"eat → ate",b:"manger 🍽️"},
+      {a:"see → saw",b:"voir 👀"},{a:"have → had",b:"avoir 🎁"},
+      {a:"do → did",b:"faire ✅"},{a:"come → came",b:"venir 👋"},
+    ]}
+  },
+  {
+    id:8, title:"Can & Must", sub:"Modaux", emoji:"💪",
+    exercises:[
+      {t:"qcm",lvl:1,q:"'I can swim' means...",ok:"Je sais nager",bad:["Je dois nager","Je nage","J'aime nager"],fb:"Can = savoir/pouvoir faire 🏊"},
+      {t:"fill",lvl:1,q:"You ___ study for the test.",ans:"must",hint:"obligation = must"},
+      {t:"qcm",lvl:2,q:"I ___ ride a bike. (capacité)",ok:"can",bad:["must","should","am"],fb:"Can = capacité 🚴"},
+      {t:"qcm",lvl:2,q:"He ___ wear a helmet. (obligatoire)",ok:"must",bad:["can","like","want"],fb:"Must = obligation ⛑️"},
+      {t:"fill",lvl:2,q:"You ___ not run in the corridors.",ans:"must",hint:"interdiction = must not"},
+      {t:"qcm",lvl:2,q:"Négatif de 'can' :",ok:"can't / cannot",bad:["not can","mustn't","don't can"],fb:"Can't = cannot ❌"},
+      {t:"fill",lvl:3,q:"I ___ (can-négatif) fly, but I can swim.",ans:"can't",hint:"can → can't"},
+      {t:"order",lvl:2,q:"Forme la phrase :",words:["She","can","speak","three","languages"],ans:"She can speak three languages",fb:"Impressionnant ! 🗣️"},
+      {t:"speak",lvl:2,inst:"Ce que tu sais faire :",target:"I can speak French and English",show:"I can speak French and English!",kw:["can","french","english"],fb:"Excellent ! 🌍"},
+      {t:"speak",lvl:3,inst:"Règle de classe :",target:"You must not run in the school",show:"You must not run in the school!",kw:["must","not","school"],fb:"Très autoritaire ! 👮"},
+    ],
+    game:{type:"hang",title:"Pendu : Capacités",words:[
+      {w:"SWIMMING",h:"I can... 🏊"},{w:"FLYING",h:"Birds can... 🐦"},
+      {w:"READING",h:"You must practise 📚"},{w:"DRIVING",h:"Adults can 🚗"},
+      {w:"COOKING",h:"Can you...? 🍳"},
+    ]}
+  },
+  {
+    id:9, title:"Shopping!", sub:"Shopping & Voyages", emoji:"🛍️",
+    exercises:[
+      {t:"qcm",lvl:1,q:"'How much is it?' means...",ok:"C'est combien ?",bad:["C'est où ?","C'est quoi ?","C'est comment ?"],fb:"How much = combien ? 💰"},
+      {t:"fill",lvl:1,q:"I'd ___ to buy these shoes.",ans:"like",hint:"I'd like = je voudrais"},
+      {t:"qcm",lvl:2,q:"'I'm looking for a T-shirt' means...",ok:"Je cherche un T-shirt",bad:["J'ai un T-shirt","J'achète un T-shirt","Je vends"],fb:"I'm looking for = je cherche 🛍️"},
+      {t:"fill",lvl:2,q:"It ___ ten pounds.",ans:"costs",hint:"it costs — 3ème pers."},
+      {t:"qcm",lvl:2,q:"'It's too expensive!' means...",ok:"C'est trop cher !",bad:["C'est trop grand !","C'est bon marché !","C'est parfait !"],fb:"Expensive = cher 💸"},
+      {t:"qcm",lvl:2,q:"'What size are you?' Réponse :",ok:"I'm a size 38.",bad:["I have size 38.","My size is the 38.","Size me 38."],fb:"I'm a size... = je fais du... 👕"},
+      {t:"fill",lvl:3,q:"___ I try it on? (puis-je l'essayer ?)",ans:"Can",hint:"demande = Can"},
+      {t:"order",lvl:2,q:"Pose une question :",words:["How","much","are","these","jeans"],ans:"How much are these jeans",fb:"Super ! 👖"},
+      {t:"speak",lvl:2,inst:"Au magasin :",target:"I would like to buy this T-shirt please",show:"I would like to buy this T-shirt, please!",kw:["like","buy","shirt"],fb:"Client parfait ! 🛍️"},
+      {t:"speak",lvl:3,inst:"Planifie un voyage :",target:"I want to go to London next summer",show:"I want to go to London next summer!",kw:["want","go","london"],fb:"Bonne destination ! ✈️"},
+    ],
+    game:{type:"memory",title:"Memory : Shopping",pairs:[
+      {a:"expensive 💸",b:"cher"},{a:"cheap 🤑",b:"bon marché"},
+      {a:"receipt 🧾",b:"reçu"},{a:"discount 🏷️",b:"réduction"},
+      {a:"cash 💵",b:"liquide"},{a:"size 👕",b:"taille"},
+    ]}
+  },
+  {
+    id:10, title:"My Opinion", sub:"Santé & Opinions", emoji:"💭",
+    exercises:[
+      {t:"qcm",lvl:1,q:"'I think...' means...",ok:"Je pense...",bad:["Je sais...","Je veux...","Je vois..."],fb:"I think = je pense 💭"},
+      {t:"fill",lvl:1,q:"I ___ that vegetables are healthy.",ans:"think",hint:"I think that..."},
+      {t:"qcm",lvl:2,q:"'I have a headache' means...",ok:"J'ai mal à la tête",bad:["J'ai mal au ventre","J'ai de la fièvre","Je suis fatigué"],fb:"Headache = mal à la tête 🤕"},
+      {t:"fill",lvl:2,q:"She ___ a stomachache.",ans:"has",hint:"to have → 3ème pers. has"},
+      {t:"qcm",lvl:2,q:"'In my opinion' — c'est correct ?",ok:"In my opinion",bad:["At my opinion","From my opinion","With my opinion"],fb:"In my opinion = à mon avis 💭"},
+      {t:"fill",lvl:2,q:"I feel ___ today. (great)",ans:"great",hint:"I feel great = je me sens bien"},
+      {t:"qcm",lvl:3,q:"'I don't agree' means...",ok:"Je ne suis pas d'accord",bad:["Je suis d'accord","Je ne comprends pas","Je ne sais pas"],fb:"I don't agree = pas d'accord ❌"},
+      {t:"order",lvl:2,q:"Donne ton opinion :",words:["I","think","music","is","great"],ans:"I think music is great",fb:"Excellent ! 🎵"},
+      {t:"speak",lvl:2,inst:"Ton opinion :",target:"I think English is fun and interesting",show:"I think English is fun and interesting!",kw:["think","english","fun"],fb:"On adore cette opinion ! 🌟"},
+      {t:"speak",lvl:3,inst:"Ta santé :",target:"I feel great today because I slept well",show:"I feel great today because I slept well!",kw:["feel","great","slept"],fb:"Super forme ! 💪"},
+    ],
+    game:{type:"hang",title:"Pendu : Corps & Opinions",words:[
+      {w:"HEADACHE",h:"Mal à la tête 🤕"},{w:"STOMACH",h:"Organe digestif 🫃"},
+      {w:"HEALTHY",h:"En bonne santé 💪"},{w:"DOCTOR",h:"Il soigne 🩺"},
+      {w:"OPINION",h:"Ce que tu penses 💭"},
+    ]}
+  },
+];
+
+// Couleur par leçon — thème complet (main, light, bg, text, shadow)
+const TH = [
+  {m:"#FF85A1",l:"#FFD6E0",bg:"#FFF5F8",t:"#C0466A",sh:"40,161"},
+  {m:"#FFB347",l:"#FFE5B4",bg:"#FFFAF0",t:"#C07820",sh:"255,179,71"},
+  {m:"#2EC4B6",l:"#B8F0EC",bg:"#F0FFFE",t:"#1A8A80",sh:"46,196,182"},
+  {m:"#9B72CF",l:"#E8DEFF",bg:"#F8F5FF",t:"#6B42AF",sh:"155,114,207"},
+  {m:"#FF6B9D",l:"#FFD6EB",bg:"#FFF5FA",t:"#CC3B7A",sh:"255,107,157"},
+  {m:"#4ECDC4",l:"#B8F5F2",bg:"#F0FFFE",t:"#2A9A92",sh:"78,205,196"},
+  {m:"#45B7D1",l:"#B8E8F5",bg:"#F0F8FF",t:"#2A88A8",sh:"69,183,209"},
+  {m:"#7FBF7F",l:"#D4EDD4",bg:"#F0FFF0",t:"#4A8F4A",sh:"127,191,127"},
+  {m:"#DDA0DD",l:"#F5D8F5",bg:"#FDF5FD",t:"#A060A0",sh:"221,160,221"},
+  {m:"#F0A500",l:"#FAE0A0",bg:"#FFFCF0",t:"#B07800",sh:"240,165,0"},
+];
+
+const shuffle = a => { const r=[...a]; for(let i=r.length-1;i>0;i--){const j=~~(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]} return r; };
+
+// ══════════════════════════════════════════
+// STYLES & ANIMATIONS (injectés une fois)
+// ══════════════════════════════════════════
+function Styles() {
+  return (
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+      *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+      body{margin:0;font-family:'Nunito',sans-serif;background:#FFF5F8}
+      @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+      @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+      @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes bounceIn{0%{transform:scale(0.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+      @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+      @keyframes popIn{0%{transform:scale(0)rotate(-20deg);opacity:0}70%{transform:scale(1.25)rotate(5deg)}100%{transform:scale(1)rotate(0);opacity:1}}
+      @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,133,161,0.5)}50%{box-shadow:0 0 0 12px rgba(255,133,161,0)}}
+      @keyframes wave{0%,100%{transform:scaleY(0.5)}50%{transform:scaleY(1.5)}}
+      .fl{animation:float 3s ease-in-out infinite}
+      .pu{animation:pulse 2s ease-in-out infinite}
+      .fu{animation:fadeUp 0.3s ease forwards}
+      .bi{animation:bounceIn 0.5s cubic-bezier(.34,1.56,.64,1) forwards}
+      .sh{animation:shake 0.4s ease}
+      .pi{animation:popIn 0.5s cubic-bezier(.34,1.56,.64,1) forwards}
+      .gw{animation:glow 2s ease-in-out infinite}
+      input:focus{outline:none}
+      ::-webkit-scrollbar{width:5px}
+      ::-webkit-scrollbar-track{background:transparent}
+      ::-webkit-scrollbar-thumb{background:#FFB7C5;border-radius:3px}
+    `}</style>
+  );
+}
+
+// ══════════════════════════════════════════
+// WELCOME SCREEN
+// ══════════════════════════════════════════
+function WelcomeScreen({ name, setName, onStart }) {
+  const decos = ["🌸","⭐","💫","🌷","✨","🎀","🌼"];
+  return (
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,background:"linear-gradient(160deg,#FFF0F5,#FFF8F2,#F5F0FF)",gap:24,position:"relative",overflow:"hidden"}}>
+      {decos.map((e,i) => (
+        <div key={i} className="fl" style={{position:"absolute",fontSize:[26,18,22,16,20,18,24][i],opacity:0.22,
+          top:[18,55,null,null,null,120,null][i],bottom:[null,null,70,55,35,null,20][i],
+          left:[14,null,22,null,null,12,null][i],right:[null,18,null,12,40,null,16][i],
+          animationDelay:`${i*0.55}s`,animationDuration:`${3+i*0.3}s`}}>{e}</div>
+      ))}
+
+      <div className="fl" style={{fontSize:100,filter:"drop-shadow(0 8px 20px rgba(255,133,161,0.35))"}}>🦉</div>
+
+      <div style={{textAlign:"center"}} className="bi">
+        <h1 style={{margin:0,fontSize:38,fontWeight:900,color:"#C0466A",letterSpacing:-1.5,
+          textShadow:"0 4px 0 #FFD6E0,0 6px 16px rgba(192,70,106,0.15)"}}>EnglishFun !</h1>
+        <p style={{margin:"8px 0 0",color:"#B080A0",fontSize:14,fontWeight:700,letterSpacing:0.2}}>
+          Apprends l'anglais avec plaisir ✨
+        </p>
+      </div>
+
+      <div style={{width:"100%",maxWidth:300}} className="fu">
+        <label style={{display:"block",color:"#C0466A",fontWeight:800,fontSize:11,marginBottom:8,letterSpacing:1,textTransform:"uppercase"}}>Ton prénom 👋</label>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Héline"
+          onKeyDown={e=>e.key==="Enter"&&name.trim()&&onStart()}
+          style={{width:"100%",padding:"14px 18px",border:"2.5px solid #FFD6E0",borderRadius:18,fontSize:20,
+            fontFamily:"Nunito,sans-serif",fontWeight:700,color:"#4A2020",background:"white",transition:"border-color 0.2s"}}
+          onFocus={e=>e.target.style.borderColor="#FF85A1"}
+          onBlur={e=>e.target.style.borderColor="#FFD6E0"} />
+      </div>
+
+      <button onClick={onStart} disabled={!name.trim()} style={{
+        background:name.trim()?"linear-gradient(145deg,#FF9EC0,#FF5C87)":"#E8D0D8",
+        color:"white",border:"none",borderRadius:22,padding:"17px 56px",fontSize:20,fontWeight:900,
+        cursor:name.trim()?"pointer":"default",fontFamily:"Nunito,sans-serif",letterSpacing:-0.5,
+        boxShadow:name.trim()?"0 6px 0 #C0466A,0 12px 30px rgba(255,133,161,0.4)":"none",
+        opacity:name.trim()?1:0.6,transition:"all 0.15s"}}
+        onMouseDown={e=>{if(name.trim()){e.currentTarget.style.transform="translateY(4px)";e.currentTarget.style.boxShadow="0 2px 0 #C0466A,0 6px 16px rgba(255,133,161,0.3)";}}}
+        onMouseUp={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=name.trim()?"0 6px 0 #C0466A,0 12px 30px rgba(255,133,161,0.4)":"";}}>
+        On y va ! 🚀
+      </button>
+
+      <p style={{margin:0,color:"#D0B0C0",fontSize:12,fontWeight:600}}>10 leçons · 100 exercices · 2 jeux</p>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+// MAP SCREEN
+// ══════════════════════════════════════════
+function MapScreen({ name, progress, onOpenLesson }) {
+  const totalStars = Object.values(progress).reduce((s,p)=>s+(p?.stars||0),0);
+  const done = Object.values(progress).filter(p=>p?.done).length;
+
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#FFF0F5,#FFF8F2,#F5F0FF)",fontFamily:"Nunito,sans-serif"}}>
+      {/* sticky header */}
+      <div style={{background:"rgba(255,255,255,0.96)",padding:"16px 20px 14px",boxShadow:"0 2px 20px rgba(255,133,161,0.12)",position:"sticky",top:0,zIndex:20,backdropFilter:"blur(12px)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#C0466A"}}>Bonjour {name} ! 🌸</h2>
+            <p style={{margin:"2px 0 0",fontSize:12,color:"#B080A0",fontWeight:700}}>Continue ton aventure anglaise !</p>
+          </div>
+          <div style={{background:"linear-gradient(135deg,#FFF0F5,#FFEEF6)",borderRadius:16,padding:"9px 15px",textAlign:"center",border:"2px solid #FFD6E0",boxShadow:"0 3px 0 #FFB7C5"}}>
+            <div style={{fontSize:20,fontWeight:900,color:"#C0466A",lineHeight:1}}>⭐ {totalStars}</div>
+            <div style={{fontSize:10,color:"#B080A0",fontWeight:800,marginTop:1}}>{done}/10 leçons</div>
+          </div>
+        </div>
+        <div style={{height:8,background:"#FFD6E0",borderRadius:4,marginTop:11,overflow:"hidden"}}>
+          <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#FF85A1,#FFB347,#FFD166)",width:`${done*10}%`,transition:"width 0.6s cubic-bezier(.34,1.56,.64,1)"}} />
+        </div>
+      </div>
+
+      {/* lesson path */}
+      <div style={{padding:"20px 20px 60px"}}>
+        <p style={{textAlign:"center",margin:"0 0 18px",fontSize:12,color:"#C0A0B8",fontWeight:800,letterSpacing:1.5,textTransform:"uppercase"}}>✨ Ton parcours ✨</p>
+
+        {LESSONS.map((lesson,i) => {
+          const p = progress[lesson.id]||{};
+          const th = TH[i%TH.length];
+          const unlocked = p.unlocked||false;
+          const isDone = p.done||false;
+          const stars = p.stars||0;
+          const isCurrent = unlocked&&!isDone;
+          const nextTh = TH[(i+1)%TH.length];
+
+          return (
+            <div key={lesson.id} style={{display:"flex",gap:14}}>
+              {/* timeline */}
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:18,flexShrink:0,width:24}}>
+                <div className={isCurrent?"pu gw":""} style={{
+                  width:20,height:20,borderRadius:"50%",flexShrink:0,
+                  background:isDone?th.m:unlocked?"white":"#EAD8E0",
+                  border:`3px solid ${unlocked?th.m:"#D8C4CE"}`,
+                  boxShadow:unlocked?`0 0 0 5px ${th.l}40`:"none",
+                  transition:"all 0.3s"}} />
+                {i<LESSONS.length-1 && (
+                  <div style={{width:3,flex:1,minHeight:18,marginTop:4,borderRadius:2,
+                    background:isDone?`linear-gradient(${th.m},${nextTh.m})`:"repeating-linear-gradient(to bottom,#E8C8D4 0,#E8C8D4 5px,transparent 5px,transparent 10px)"}} />
+                )}
+              </div>
+
+              {/* card */}
+              <div style={{flex:1,paddingBottom:10}}>
+                <button onClick={()=>unlocked&&onOpenLesson(lesson.id)} style={{
+                  width:"100%",textAlign:"left",fontFamily:"Nunito,sans-serif",
+                  border:`2.5px solid ${unlocked?(isDone?th.m:th.l):"#E8D4DC"}`,
+                  cursor:unlocked?"pointer":"default",borderRadius:20,padding:"14px 16px",
+                  background:isDone?`linear-gradient(145deg,${th.m}F0,${th.m}C0)`:unlocked?"white":"#FAF0F4",
+                  boxShadow:unlocked?`0 5px 0 ${isDone?th.t+"80":"#D8C0C8"},0 8px 24px rgba(${th.sh},0.18)`:"none",
+                  opacity:unlocked?1:0.55,transition:"transform 0.12s ease"}}
+                  onMouseDown={e=>unlocked&&(e.currentTarget.style.transform="translateY(4px)")}
+                  onMouseUp={e=>unlocked&&(e.currentTarget.style.transform="")}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <span style={{fontSize:34,flexShrink:0}}>{unlocked?lesson.emoji:"🔒"}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:15,fontWeight:800,color:isDone?"white":unlocked?"#3A1820":"#A090A0",letterSpacing:-0.3}}>{lesson.title}</div>
+                      <div style={{fontSize:11,fontWeight:700,marginTop:2,color:isDone?"rgba(255,255,255,0.75)":"#B0A0A8",letterSpacing:0.1}}>
+                        {lesson.sub} · {lesson.exercises.length} exercices
+                      </div>
+                      {isDone && <div style={{fontSize:16,marginTop:5}}>{"⭐".repeat(stars)}{"☆".repeat(3-stars)}</div>}
+                      {isCurrent && (
+                        <div style={{display:"inline-block",marginTop:6,background:th.m,color:"white",fontSize:9,
+                          fontWeight:900,padding:"3px 10px",borderRadius:10,letterSpacing:0.8,
+                          boxShadow:`0 2px 0 ${th.t}80`}}>
+                          COMMENCE ICI !
+                        </div>
+                      )}
+                    </div>
+                    {unlocked&&!isDone&&<span style={{fontSize:16,opacity:0.45,color:th.t,marginLeft:4}}>▶</span>}
+                    {isDone&&<div style={{width:30,height:30,borderRadius:"50%",background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>✓</div>}
+                  </div>
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+// EXERCISE COMPONENTS
+// ══════════════════════════════════════════
+function LevelBadge({ lvl, th }) {
+  return (
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <span style={{fontSize:10,fontWeight:800,color:th.t,background:th.l,padding:"4px 12px",borderRadius:10,letterSpacing:0.8,textTransform:"uppercase"}}>
+        {"⭐".repeat(lvl)} Niveau {lvl===1?"facile":lvl===2?"moyen":"difficile"}
+      </span>
+    </div>
+  );
+}
+
+function Card({ children, style={} }) {
+  return (
+    <div style={{background:"white",borderRadius:22,padding:"20px",boxShadow:"0 4px 24px rgba(0,0,0,0.05)",marginBottom:16,...style}}>
+      {children}
+    </div>
+  );
+}
+
+function PrimaryBtn({ onClick, disabled, children, th }) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      width:"100%",padding:"15px",borderRadius:16,border:"none",fontFamily:"Nunito,sans-serif",
+      background:!disabled?`linear-gradient(145deg,${th.m},${th.m}BB)`:"#E0D0D8",
+      color:!disabled?"white":"#A090A0",fontSize:16,fontWeight:800,letterSpacing:-0.3,
+      cursor:!disabled?"pointer":"default",boxShadow:!disabled?`0 5px 0 ${th.t}80`:"none",
+      transition:"all 0.1s"}}
+      onMouseDown={e=>{if(!disabled){e.currentTarget.style.transform="translateY(4px)";e.currentTarget.style.boxShadow=`0 1px 0 ${th.t}80`;}}}
+      onMouseUp={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=!disabled?`0 5px 0 ${th.t}80`:"none";}}>
+      {children}
+    </button>
+  );
+}
+
+function QCMExercise({ ex, th, answered, onCorrect, onWrong }) {
+  const [opts] = useState(()=>shuffle([ex.ok,...ex.bad]));
+  const [sel, setSel] = useState(null);
+
+  const pick = opt => {
+    if(answered) return;
+    setSel(opt);
+    opt===ex.ok ? onCorrect() : onWrong(`La bonne réponse : "${ex.ok}"`);
+  };
+
+  return (
+    <div className="fu">
+      <LevelBadge lvl={ex.lvl} th={th} />
+      <Card><p style={{margin:0,fontSize:16,fontWeight:700,color:"#3A1820",lineHeight:1.55}}>{ex.q}</p></Card>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {opts.map((o,i) => {
+          let bg="white",bc="#F0E0E8",col="#3A1820",bsh="0 2px 8px rgba(0,0,0,0.04)";
+          if(answered){
+            if(o===ex.ok){bg="#E6FFF2";bc="#4CAF50";col="#1B6B35";}
+            else if(sel===o){bg="#FFF0F0";bc="#FF6B6B";col="#B02020";}
+          }
+          return (
+            <button key={i} onClick={()=>pick(o)} style={{padding:"13px 16px",borderRadius:16,border:`2px solid ${bc}`,
+              background:bg,color:col,fontSize:14,fontWeight:700,textAlign:"left",
+              cursor:answered?"default":"pointer",fontFamily:"Nunito,sans-serif",
+              boxShadow:bsh,transition:"all 0.15s"}}
+              onMouseEnter={e=>{if(!answered){e.currentTarget.style.borderColor=th.m;e.currentTarget.style.transform="translateY(-1px)";}}}
+              onMouseLeave={e=>{if(!answered){e.currentTarget.style.borderColor="#F0E0E8";e.currentTarget.style.transform="translateY(0)";}}}
+            >
+              <span style={{display:"inline-flex",width:26,height:26,borderRadius:"50%",
+                background:answered&&o===ex.ok?"#4CAF50":th.l,color:answered&&o===ex.ok?"white":th.t,
+                alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,marginRight:10,flexShrink:0}}>
+                {["A","B","C","D"][i]}
+              </span>
+              {o}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FillExercise({ ex, th, answered, onCorrect, onWrong }) {
+  const [val, setVal] = useState("");
+  const [shaking, setShaking] = useState(false);
+
+  const check = () => {
+    if(!val.trim()) return;
+    if(val.trim().toLowerCase()===ex.ans.toLowerCase()) onCorrect();
+    else {
+      setShaking(true);
+      setTimeout(()=>setShaking(false),400);
+      onWrong(`La bonne réponse : "${ex.ans}"`);
+    }
+  };
+  const parts = ex.q.split("___");
+
+  return (
+    <div className="fu">
+      <LevelBadge lvl={ex.lvl} th={th} />
+      <Card>
+        <div style={{fontSize:17,fontWeight:700,color:"#3A1820",lineHeight:2.2,display:"flex",flexWrap:"wrap",alignItems:"center",gap:"0 6px"}}>
+          <span>{parts[0]}</span>
+          <input value={val} onChange={e=>!answered&&setVal(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&!answered&&check()}
+            disabled={answered} placeholder="???"
+            className={shaking?"sh":""}
+            style={{border:`2.5px solid ${answered?(val.toLowerCase()===ex.ans.toLowerCase()?"#4CAF50":"#FF6B6B"):th.m}`,
+              borderRadius:12,padding:"5px 12px",fontSize:16,fontWeight:700,width:115,
+              fontFamily:"Nunito,sans-serif",
+              background:answered?(val.toLowerCase()===ex.ans.toLowerCase()?"#E6FFF2":"#FFF0F0"):"white",
+              color:answered?(val.toLowerCase()===ex.ans.toLowerCase()?"#1B6B35":"#B02020"):"#3A1820",
+              textAlign:"center",transition:"border-color 0.2s"}} />
+          {parts[1]&&<span>{parts[1]}</span>}
+        </div>
+        <p style={{margin:"10px 0 0",fontSize:12,color:"#C0A0B0",fontWeight:700}}>💡 {ex.hint}</p>
+      </Card>
+      {!answered && <PrimaryBtn onClick={check} disabled={!val.trim()} th={th}>Vérifier ✓</PrimaryBtn>}
+    </div>
+  );
+}
+
+function WordOrderExercise({ ex, th, answered, onCorrect, onWrong }) {
+  const [avail, setAvail] = useState(()=>shuffle(ex.words));
+  const [built, setBuilt] = useState([]);
+  const [shaking, setShaking] = useState(false);
+
+  const add = (w,i) => {
+    if(answered) return;
+    setBuilt(b=>[...b,w]);
+    setAvail(a=>a.filter((_,j)=>j!==i));
+  };
+  const remove = (w,i) => {
+    if(answered) return;
+    setBuilt(b=>b.filter((_,j)=>j!==i));
+    setAvail(a=>[...a,w]);
+  };
+  const check = () => {
+    if(built.join(" ")===ex.ans) onCorrect();
+    else {
+      setShaking(true);
+      setTimeout(()=>setShaking(false),400);
+      onWrong(`Réponse : "${ex.ans}"`);
+    }
+  };
+
+  return (
+    <div className="fu">
+      <LevelBadge lvl={ex.lvl} th={th} />
+      <Card>
+        <p style={{margin:"0 0 12px",fontSize:15,fontWeight:700,color:"#3A1820"}}>{ex.q}</p>
+        {/* sentence zone */}
+        <div className={shaking?"sh":""} style={{minHeight:52,background:th.bg,borderRadius:14,
+          padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",
+          border:`2px dashed ${th.l}`,marginBottom:14}}>
+          {built.length===0 && <span style={{color:"#C0A0B0",fontSize:13,fontWeight:700}}>Clique sur les mots...</span>}
+          {built.map((w,i)=>(
+            <button key={i} onClick={()=>remove(w,i)} style={{background:th.m,color:"white",border:"none",
+              borderRadius:9,padding:"6px 11px",fontSize:13,fontWeight:800,cursor:"pointer",
+              fontFamily:"Nunito,sans-serif",boxShadow:`0 2px 0 ${th.t}80`}}>
+              {w} ×
+            </button>
+          ))}
+        </div>
+        {/* word bank */}
+        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+          {avail.map((w,i)=>(
+            <button key={i} onClick={()=>add(w,i)} style={{background:th.l,color:th.t,border:`2px solid ${th.m}80`,
+              borderRadius:9,padding:"7px 13px",fontSize:13,fontWeight:800,cursor:"pointer",
+              fontFamily:"Nunito,sans-serif",boxShadow:"0 2px 0 rgba(0,0,0,0.06)"}}>
+              {w}
+            </button>
+          ))}
+        </div>
+      </Card>
+      {!answered&&built.length>0&&<PrimaryBtn onClick={check} disabled={false} th={th}>Vérifier ✓</PrimaryBtn>}
+    </div>
+  );
+}
+
+function SpeakingExercise({ ex, th, answered, onCorrect, onWrong }) {
+  const [status, setStatus] = useState("idle"); // idle|listening|done
+  const [transcript, setTranscript] = useState("");
+  const [supported] = useState(()=>"webkitSpeechRecognition" in window||"SpeechRecognition" in window);
+  const [textFallback, setTextFallback] = useState("");
+  const recRef = useRef(null);
+
+  const speakTarget = () => {
+    if(!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(ex.target);
+    u.lang="en-US"; u.rate=0.8; u.pitch=1.1;
+    window.speechSynthesis.speak(u);
+  };
+
+  const startListen = () => {
+    if(answered||status==="listening") return;
+    const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang="en-US"; rec.interimResults=false; rec.maxAlternatives=3;
+    recRef.current=rec;
+    setStatus("listening"); setTranscript("");
+
+    rec.onresult = e => {
+      const said = e.results[0][0].transcript.toLowerCase();
+      setTranscript(said); setStatus("done");
+      const hits = ex.kw.filter(k=>said.includes(k.toLowerCase()));
+      hits.length>=Math.ceil(ex.kw.length*0.5) ? onCorrect() : onWrong(`Tu as dit : "${said}". Essaie : "${ex.show}"`);
+    };
+    rec.onerror = () => { setStatus("idle"); onWrong("Micro non capté. Réessaie ! 🎤"); };
+    rec.start();
+  };
+
+  const stopListen = () => { if(recRef.current){recRef.current.stop();recRef.current=null;} setStatus("idle"); };
+
+  const checkText = () => {
+    const lower = textFallback.toLowerCase();
+    const hits = ex.kw.filter(k=>lower.includes(k.toLowerCase()));
+    hits.length>=Math.ceil(ex.kw.length*0.5) ? onCorrect() : onWrong(`Essaie d'inclure : ${ex.kw.join(", ")}`);
+  };
+
+  return (
+    <div className="fu">
+      <LevelBadge lvl={ex.lvl} th={th} />
+      <Card>
+        <p style={{margin:"0 0 12px",fontSize:13,color:"#B07090",fontWeight:800,letterSpacing:0.2}}>🎯 {ex.inst}</p>
+        <div style={{background:th.bg,borderRadius:14,padding:"14px 16px",fontSize:17,fontWeight:800,
+          color:th.t,marginBottom:14,border:`2px solid ${th.l}`,letterSpacing:-0.3,textAlign:"center",
+          lineHeight:1.4}}>"{ex.show}"</div>
+
+        <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
+          <button onClick={speakTarget} style={{background:"none",border:`2px solid ${th.l}`,borderRadius:10,
+            padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700,color:th.t,fontFamily:"Nunito,sans-serif"}}>
+            🔊 Écouter la prononciation
+          </button>
+        </div>
+
+        {supported ? (
+          <div style={{textAlign:"center"}}>
+            <button onClick={status==="listening"?stopListen:startListen} disabled={answered} style={{
+              width:80,height:80,borderRadius:"50%",border:"none",cursor:answered?"default":"pointer",
+              background:status==="listening"?"linear-gradient(145deg,#FF4488,#CC1155)":`linear-gradient(145deg,${th.m},${th.m}BB)`,
+              color:"white",fontSize:34,
+              boxShadow:status==="listening"?"0 0 0 8px rgba(255,68,136,0.2),0 0 0 16px rgba(255,68,136,0.1),0 6px 0 #AA1144":`0 6px 0 ${th.t},0 8px 24px rgba(${th.sh},0.35)`,
+              animation:status==="listening"?"pulse 1s ease-in-out infinite":"none",transition:"all 0.2s"}}>
+              {status==="listening"?"⏹":"🎤"}
+            </button>
+            <p style={{margin:"12px 0 0",fontSize:13,fontWeight:700,
+              color:status==="listening"?"#FF4488":"#B07090"}}>
+              {status==="idle"?"Appuie et parle en anglais !":status==="listening"?"🔴 Je t'écoute... (appuie pour arrêter)":"✓ Enregistré !"}
+            </p>
+            {transcript&&(
+              <div style={{marginTop:10,background:"#F8F4FF",borderRadius:12,padding:"10px 14px",
+                fontSize:13,color:"#6B42AF",fontWeight:700,border:"1.5px solid #E8DEFF"}}>
+                Tu as dit : "{transcript}"
+              </div>
+            )}
+            {/* wave animation while listening */}
+            {status==="listening"&&(
+              <div style={{display:"flex",justifyContent:"center",gap:3,marginTop:14}}>
+                {[...Array(7)].map((_,i)=>(
+                  <div key={i} style={{width:4,height:20,background:th.m,borderRadius:2,
+                    animation:`wave 0.8s ${i*0.1}s ease-in-out infinite`}} />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <p style={{fontSize:12,color:"#B07090",marginBottom:8,fontWeight:700,textAlign:"center"}}>
+              Reconnaisance vocale non disponible — écris la phrase 📝
+            </p>
+            <input value={textFallback} onChange={e=>setTextFallback(e.target.value)} disabled={answered}
+              placeholder="Écris la phrase en anglais..."
+              onKeyDown={e=>e.key==="Enter"&&!answered&&textFallback.trim()&&checkText()}
+              style={{width:"100%",padding:"12px",border:`2px solid ${th.l}`,borderRadius:12,
+                fontSize:14,fontFamily:"Nunito,sans-serif",fontWeight:700,background:"white",
+                color:"#3A1820",boxSizing:"border-box",outline:"none"}} />
+            {!answered&&textFallback.trim()&&(
+              <div style={{marginTop:10}}>
+                <PrimaryBtn onClick={checkText} disabled={false} th={th}>Vérifier ✓</PrimaryBtn>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function ExerciseRenderer({ ex, th, answered, onCorrect, onWrong }) {
+  if(ex.t==="qcm")   return <QCMExercise       key={ex.q} ex={ex} th={th} answered={answered} onCorrect={onCorrect} onWrong={onWrong} />;
+  if(ex.t==="fill")  return <FillExercise       key={ex.q} ex={ex} th={th} answered={answered} onCorrect={onCorrect} onWrong={onWrong} />;
+  if(ex.t==="order") return <WordOrderExercise  key={ex.q} ex={ex} th={th} answered={answered} onCorrect={onCorrect} onWrong={onWrong} />;
+  if(ex.t==="speak") return <SpeakingExercise   key={ex.q} ex={ex} th={th} answered={answered} onCorrect={onCorrect} onWrong={onWrong} />;
+  return null;
+}
+
+// ══════════════════════════════════════════
+// GAMES
+// ══════════════════════════════════════════
+function MemoryGame({ game, th, onComplete }) {
+  const [cards] = useState(()=>shuffle(game.pairs.flatMap(p=>[
+    {id:Math.random(),text:p.a,pid:p.a+p.b},
+    {id:Math.random(),text:p.b,pid:p.a+p.b},
+  ])));
+  const [flipped, setFlipped] = useState([]);
+  const [matched, setMatched] = useState([]);
+  const [locked, setLocked] = useState(false);
+  const [moves, setMoves] = useState(0);
+  const [done, setDone] = useState(false);
+
+  const flip = card => {
+    if(locked||flipped.find(c=>c.id===card.id)||matched.includes(card.pid)) return;
+    if(flipped.length===0) { setFlipped([card]); return; }
+    const first = flipped[0];
+    setMoves(m=>m+1);
+    if(first.pid===card.pid&&first.id!==card.id) {
+      const nm = [...matched,card.pid];
+      setMatched(nm); setFlipped([]);
+      if(nm.length===game.pairs.length) setDone(true);
+    } else {
+      setLocked(true); setFlipped(f=>[...f,card]);
+      setTimeout(()=>{ setFlipped([]); setLocked(false); }, 950);
+    }
+  };
+
+  if(done) return (
+    <div style={{textAlign:"center",padding:"30px 20px"}} className="bi">
+      <div style={{fontSize:72}}>🏆</div>
+      <h3 style={{color:th.t,fontWeight:900,fontSize:22,margin:"12px 0 4px"}}>Bravo !</h3>
+      <p style={{color:"#B07090",fontSize:14,margin:"0 0 20px"}}>Toutes les paires en {moves} essais !</p>
+      <PrimaryBtn onClick={onComplete} disabled={false} th={th}>Voir mes résultats ! 🌟</PrimaryBtn>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:12,fontSize:13,color:"#B07090",fontWeight:800}}>
+        <span>Paires : {matched.length}/{game.pairs.length}</span>
+        <span>Essais : {moves}</span>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:9}}>
+        {cards.map(card => {
+          const isFlipped = !!flipped.find(c=>c.id===card.id);
+          const isMatched = matched.includes(card.pid);
+          const faceUp = isFlipped||isMatched;
+          return (
+            <button key={card.id} onClick={()=>flip(card)} style={{
+              aspectRatio:"1",borderRadius:16,fontFamily:"Nunito,sans-serif",
+              border:`2.5px solid ${isMatched?th.m:faceUp?th.l:"#E8D0DC"}`,
+              background:isMatched?th.l:faceUp?"white":th.m,
+              color:isMatched?th.t:faceUp?"#3A1820":"white",
+              fontSize:faceUp?11:22,fontWeight:faceUp?800:400,
+              cursor:"pointer",padding:6,lineHeight:1.3,textAlign:"center",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              boxShadow:isMatched?"none":faceUp?"0 2px 0 #E0C8D0":`0 3px 0 ${th.t}80`,
+              transition:"all 0.2s",
+              transform:isMatched?"scale(0.93)":"scale(1)"}}>
+              {faceUp ? card.text : "?"}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function HangmanGame({ game, th, onComplete }) {
+  const [words] = useState(()=>shuffle(game.words).slice(0,3));
+  const [wIdx, setWIdx] = useState(0);
+  const [guessed, setGuessed] = useState(new Set());
+  const [lives, setLives] = useState(6);
+  const [solved, setSolved] = useState(0);
+  const [done, setDone] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+  const cur = words[wIdx];
+  const letters = cur.w.split("");
+  const allGuessed = letters.every(l=>guessed.has(l));
+
+  const nextWord = (won) => {
+    if(won) setSolved(s=>s+1);
+    setTimeout(()=>{
+      if(wIdx<words.length-1){
+        setWIdx(i=>i+1); setGuessed(new Set()); setLives(6); setCelebrate(false);
+      } else setDone(true);
+    }, won?1200:600);
+  };
+
+  const guess = l => {
+    if(guessed.has(l)||lives===0) return;
+    const ng = new Set([...guessed,l]);
+    const hit = letters.includes(l);
+    const nl = hit ? lives : lives-1;
+    setGuessed(ng); if(!hit) setLives(nl);
+    const won = letters.every(x=>ng.has(x));
+    if(won) { setCelebrate(true); nextWord(true); }
+    else if(nl===0) nextWord(false);
+  };
+
+  if(done) return (
+    <div style={{textAlign:"center",padding:"30px 20px"}} className="bi">
+      <div style={{fontSize:64}}>{solved===words.length?"🏆":solved>0?"⭐":"💪"}</div>
+      <h3 style={{color:th.t,fontWeight:900,fontSize:22,margin:"12px 0 4px"}}>
+        {solved===words.length?"Parfait !":"Bien joué !"}
+      </h3>
+      <p style={{color:"#B07090",fontSize:14,margin:"0 0 20px"}}>{solved}/{words.length} mots trouvés</p>
+      <PrimaryBtn onClick={onComplete} disabled={false} th={th}>Voir mes résultats ! 🌟</PrimaryBtn>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:10,fontSize:13,color:"#B07090",fontWeight:800}}>
+        <span>Mot {wIdx+1}/{words.length}</span>
+        <span>{"❤️".repeat(lives)}{"🖤".repeat(6-lives)}</span>
+      </div>
+
+      <div style={{background:"white",borderRadius:16,padding:"12px 14px",marginBottom:14,fontSize:13,color:"#8090B0",fontWeight:700,border:"1.5px solid #F0E0E8"}}>
+        💡 {cur.h}
+      </div>
+
+      {celebrate&&(
+        <div style={{textAlign:"center",fontSize:32,marginBottom:8}} className="bi">🎉</div>
+      )}
+
+      <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:18,flexWrap:"wrap"}}>
+        {letters.map((l,i)=>(
+          <div key={i} style={{width:34,height:44,borderBottom:`3px solid ${guessed.has(l)?th.m:"#DDD"}`,
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:22,fontWeight:900,color:guessed.has(l)?th.t:"transparent",
+            animation:guessed.has(l)?"bounceIn 0.35s cubic-bezier(.34,1.56,.64,1)":"none"}}>
+            {guessed.has(l)?l:"_"}
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
+        {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(l=>{
+          const used=guessed.has(l);
+          const correct=used&&letters.includes(l);
+          const wrong=used&&!letters.includes(l);
+          return (
+            <button key={l} onClick={()=>guess(l)} disabled={used} style={{
+              width:34,height:34,borderRadius:9,border:"none",fontFamily:"Nunito,sans-serif",
+              background:correct?th.m:wrong?"#FFE8E8":"#F8ECF4",
+              color:correct?"white":wrong?"#CC4444":th.t,
+              fontSize:13,fontWeight:800,cursor:used?"default":"pointer",opacity:used?0.65:1,
+              boxShadow:!used?`0 2px 0 ${th.l}`:"none",transition:"all 0.1s"}}>
+              {l}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+// LESSON SCREEN
+// ══════════════════════════════════════════
+function LessonScreen({ lesson, th, exIdx, score, phase, feedback, answered, onCorrect, onWrong, onNext, onBack, onGameDone }) {
+  const total = lesson.exercises.length;
+  const ex = lesson.exercises[exIdx];
+
+  return (
+    <div style={{minHeight:"100vh",background:th.bg,fontFamily:"Nunito,sans-serif",display:"flex",flexDirection:"column"}}>
+      {/* header */}
+      <div style={{background:"rgba(255,255,255,0.97)",padding:"14px 16px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:10}}>
+        <button onClick={onBack} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",padding:4,color:"#888",lineHeight:1}}>←</button>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:900,fontSize:15,color:"#3A1820"}}>{lesson.emoji} {lesson.title}</div>
+          <div style={{height:7,background:"#F0E0E8",borderRadius:4,marginTop:5,overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:4,
+              background:`linear-gradient(90deg,${th.m},${th.m}BB)`,
+              width:phase==="exercises"?`${(exIdx/total)*100}%`:"100%",
+              transition:"width 0.4s cubic-bezier(.34,1.56,.64,1)"}} />
+          </div>
+        </div>
+        <div style={{fontSize:11,fontWeight:800,color:th.t,background:th.l,padding:"4px 11px",borderRadius:10,flexShrink:0}}>
+          {phase==="exercises"?`${exIdx+1}/${total}`:"🎮 Jeu"}
+        </div>
+      </div>
+
+      {/* main content */}
+      <div style={{flex:1,padding:"18px 16px",overflowY:"auto"}}>
+        {phase==="exercises" && ex && (
+          <ExerciseRenderer key={`${lesson.id}-${exIdx}`} ex={ex} th={th} answered={answered} onCorrect={onCorrect} onWrong={onWrong} />
+        )}
+        {phase==="game" && (
+          <div>
+            <div style={{textAlign:"center",marginBottom:18}}>
+              <div style={{fontSize:40}}>🎮</div>
+              <h3 style={{margin:"8px 0 4px",color:th.t,fontWeight:900,fontSize:18}}>{lesson.game.title}</h3>
+              <p style={{margin:0,color:"#B07090",fontSize:13,fontWeight:700}}>Complète le jeu pour finir la leçon !</p>
+            </div>
+            {lesson.game.type==="memory" && <MemoryGame game={lesson.game} th={th} onComplete={onGameDone} />}
+            {lesson.game.type==="hang"   && <HangmanGame game={lesson.game} th={th} onComplete={onGameDone} />}
+          </div>
+        )}
+      </div>
+
+      {/* feedback bar */}
+      {feedback && (
+        <div style={{background:feedback.ok?"#EDFFF5":"#FFF0F0",borderTop:`3px solid ${feedback.ok?"#4CAF50":"#FF6B6B"}`,padding:"16px 16px 20px"}} className="fu">
+          <div style={{fontSize:14,fontWeight:700,color:feedback.ok?"#1B6B35":"#B02020",marginBottom:12,lineHeight:1.4}}>
+            {feedback.ok?"✅ ":"❌ "}{feedback.msg}
+          </div>
+          <button onClick={onNext} style={{width:"100%",padding:"14px",borderRadius:16,border:"none",fontFamily:"Nunito,sans-serif",
+            background:feedback.ok?"linear-gradient(145deg,#4CAF50,#2E7D32)":"linear-gradient(145deg,#FF85A1,#FF5C87)",
+            color:"white",fontSize:16,fontWeight:800,cursor:"pointer",
+            boxShadow:feedback.ok?"0 5px 0 #1B6B35":"0 5px 0 #C0466A",letterSpacing:-0.3}}
+            onMouseDown={e=>{e.currentTarget.style.transform="translateY(4px)";e.currentTarget.style.boxShadow="0 1px 0 "+(feedback.ok?"#1B6B35":"#C0466A");}}
+            onMouseUp={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 5px 0 "+(feedback.ok?"#1B6B35":"#C0466A");}}>
+            Continuer →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+// RESULTS SCREEN
+// ══════════════════════════════════════════
+function ResultsScreen({ lesson, th, score, maxScore, stars, onContinue }) {
+  const pct = Math.min(100,Math.round((score/maxScore)*100));
+  const msgs = ["Bien joué ! Continue ! 💪","Très bien ! Tu progresses ! 🚀","Parfait ! Tu déchires ! 🏆"];
+  return (
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${th.bg},white)`,fontFamily:"Nunito,sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,gap:22,textAlign:"center"}}>
+
+      <div style={{fontSize:84,animation:"float 3s ease-in-out infinite",
+        filter:`drop-shadow(0 8px 20px rgba(${th.sh},0.4))`}}>
+        {stars===3?"🏆":stars===2?"🥈":"🥉"}
+      </div>
+
+      <div className="bi">
+        <h2 style={{margin:0,fontSize:28,fontWeight:900,color:th.t,letterSpacing:-1}}>{msgs[stars-1]}</h2>
+        <p style={{margin:"6px 0 0",color:"#B07090",fontSize:15,fontWeight:700}}>
+          Leçon {lesson.id} — {lesson.title} ✨
+        </p>
+      </div>
+
+      <div style={{display:"flex",gap:10,justifyContent:"center",fontSize:44}}>
+        {[1,2,3].map(i=>(
+          <span key={i} className={i<=stars?"pi":""} style={{
+            opacity:i<=stars?1:0.2,
+            animationDelay:`${(i-1)*0.18}s`,
+            display:"inline-block"}}>⭐</span>
+        ))}
+      </div>
+
+      <div style={{background:"white",borderRadius:24,padding:"22px 36px",
+        boxShadow:`0 6px 0 ${th.l},0 10px 30px rgba(${th.sh},0.2)`,
+        border:`2.5px solid ${th.l}`,minWidth:180}}>
+        <div style={{fontSize:48,fontWeight:900,color:th.t,lineHeight:1}}>{pct}%</div>
+        <div style={{fontSize:13,color:"#B07090",fontWeight:800,marginTop:4}}>Score de réussite</div>
+      </div>
+
+      <button onClick={onContinue} style={{background:`linear-gradient(145deg,${th.m},${th.m}BB)`,color:"white",
+        border:"none",borderRadius:22,padding:"17px 56px",fontSize:19,fontWeight:900,cursor:"pointer",
+        fontFamily:"Nunito,sans-serif",boxShadow:`0 6px 0 ${th.t},0 12px 30px rgba(${th.sh},0.4)`,letterSpacing:-0.5}}
+        onMouseDown={e=>{e.currentTarget.style.transform="translateY(4px)";e.currentTarget.style.boxShadow=`0 2px 0 ${th.t}`;}}
+        onMouseUp={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=`0 6px 0 ${th.t},0 12px 30px rgba(${th.sh},0.4)`;}}>
+        Continuer ! 🚀
+      </button>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+// APP — ROUTING & STATE
+// ══════════════════════════════════════════
+const initProgress = () => {
+  const p={};
+  LESSONS.forEach((l,i)=>{ p[l.id]={unlocked:i===0,stars:0,done:false}; });
+  return p;
+};
+
+export default function App() {
+  const [screen, setScreen] = useState("welcome");
+  const [name, setName] = useState("Héline");
+  const [progress, setProgress] = useState(initProgress);
+  const [lessonId, setLessonId] = useState(null);
+  const [exIdx, setExIdx] = useState(0);
+  const [score, setScore] = useState(0);
+  const [phase, setPhase] = useState("exercises");
+  const [feedback, setFeedback] = useState(null);
+  const [answered, setAnswered] = useState(false);
+
+  const lesson = LESSONS.find(l=>l.id===lessonId);
+  const th = lesson ? TH[(lesson.id-1)%TH.length] : TH[0];
+
+  const openLesson = id => {
+    setLessonId(id); setExIdx(0); setScore(0); setPhase("exercises");
+    setFeedback(null); setAnswered(false); setScreen("lesson");
+  };
+
+  const handleCorrect = (pts=10) => {
+    setScore(s=>s+pts);
+    setFeedback({ok:true,msg:lesson.exercises[exIdx]?.fb||"Super ! 🌟"});
+    setAnswered(true);
+  };
+  const handleWrong = msg => {
+    setFeedback({ok:false,msg:msg||"Presque ! Réessaie 💪"});
+    setAnswered(true);
+  };
+
+  const next = () => {
+    setFeedback(null); setAnswered(false);
+    if(phase==="exercises"){
+      if(exIdx<lesson.exercises.length-1) setExIdx(i=>i+1);
+      else setPhase("game");
+    }
+  };
+
+  const finishLesson = (bonus=0) => {
+    const final = score+bonus;
+    const max = lesson.exercises.length*10;
+    const pct = final/max;
+    const stars = pct>=0.8?3:pct>=0.6?2:1;
+    setScore(final);
+    setProgress(prev=>{
+      const up={...prev,[lesson.id]:{unlocked:true,stars,done:true}};
+      const nextL = LESSONS.find(l=>l.id===lesson.id+1);
+      if(nextL) up[nextL.id]={...up[nextL.id],unlocked:true};
+      return up;
+    });
+    setScreen("results");
+  };
+
+  return (
+    <div style={{fontFamily:"Nunito,sans-serif",maxWidth:460,margin:"0 auto",minHeight:"100vh",position:"relative",overflowX:"hidden"}}>
+      <Styles />
+      {screen==="welcome" && (
+        <WelcomeScreen name={name} setName={setName} onStart={()=>setScreen("map")} />
+      )}
+      {screen==="map" && (
+        <MapScreen name={name} progress={progress} onOpenLesson={openLesson} />
+      )}
+      {screen==="lesson" && lesson && (
+        <LessonScreen
+          lesson={lesson} th={th} exIdx={exIdx} score={score}
+          phase={phase} feedback={feedback} answered={answered}
+          onCorrect={handleCorrect} onWrong={handleWrong} onNext={next}
+          onBack={()=>setScreen("map")}
+          onGameDone={()=>finishLesson(20)} />
+      )}
+      {screen==="results" && lesson && (
+        <ResultsScreen
+          lesson={lesson} th={th} score={score}
+          maxScore={lesson.exercises.length*10}
+          stars={progress[lesson.id]?.stars||1}
+          onContinue={()=>setScreen("map")} />
+      )}
+    </div>
+  );
+}
