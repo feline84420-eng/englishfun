@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="120" fill="#FFF0F5"/>
+  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFE0EC"/>
+      <stop offset="100%" stop-color="#FFF8F2"/>
+    </linearGradient>
+  </defs>
+  <!-- corps hibou -->
+  <ellipse cx="256" cy="310" rx="110" ry="130" fill="#FF85A1"/>
+  <!-- tête -->
+  <ellipse cx="256" cy="190" rx="95" ry="90" fill="#FF85A1"/>
+  <!-- ventre -->
+  <ellipse cx="256" cy="330" rx="70" ry="90" fill="#FFD6E0"/>
+  <!-- oreilles -->
+  <polygon points="175,120 155,60 210,110" fill="#FF85A1"/>
+  <polygon points="337,120 357,60 302,110" fill="#FF85A1"/>
+  <!-- yeux blancs -->
+  <circle cx="220" cy="185" r="34" fill="white"/>
+  <circle cx="292" cy="185" r="34" fill="white"/>
+  <!-- pupilles -->
+  <circle cx="224" cy="187" r="18" fill="#C0466A"/>
+  <circle cx="296" cy="187" r="18" fill="#C0466A"/>
+  <!-- reflets -->
+  <circle cx="230" cy="181" r="6" fill="white"/>
+  <circle cx="302" cy="181" r="6" fill="white"/>
+  <!-- bec -->
+  <polygon points="256,215 238,235 274,235" fill="#FFB347"/>
+  <!-- ailes -->
+  <ellipse cx="155" cy="320" rx="55" ry="80" fill="#FF6B9D" transform="rotate(-15,155,320)"/>
+  <ellipse cx="357" cy="320" rx="55" ry="80" fill="#FF6B9D" transform="rotate(15,357,320)"/>
+  <!-- pattes -->
+  <rect x="218" y="420" width="20" height="40" rx="8" fill="#FFB347"/>
+  <rect x="274" y="420" width="20" height="40" rx="8" fill="#FFB347"/>
+  <!-- étoile déco -->
+  <text x="390" y="130" font-size="60" text-anchor="middle" fill="#FFD166">★</text>
+  <text x="120" y="150" font-size="40" text-anchor="middle" fill="#FFB7C5">★</text>
+</svg>
